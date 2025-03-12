@@ -46,6 +46,17 @@ Crazy Screenshot is a Google Chrome browser extension designed to provide automa
     Your browser does not support the video tag.
   </video>
   
+  <!-- Method 2: Using badge to link to video -->
+  <p>
+    <a href="./access/crazy_screenshot_demo.mp4">
+      <img src="https://img.shields.io/badge/Watch Demo-Click Here-blue" alt="Watch Demo Video">
+    </a>
+  </p>
+  
+  <!-- Method 3: Providing direct download link -->
+  <p>
+    <strong>Demo Video:</strong> <a href="./access/crazy_screenshot_demo.mp4" download>Download video</a> to see the extension in action
+  </p>
 </div>
 
 ## Development Status
