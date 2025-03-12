@@ -1,0 +1,88 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #249087;
+  color: white;
+  width: 300px;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+h1 {
+  font-size: 18px;
+  margin: 0 0 10px 0;
+  text-align: center;
+}
+
+.directory-selector {
+  display: flex;
+  gap: 5px;
+}
+
+#directory-path {
+  flex-grow: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  background-color: #7DDFD6;
+  color: #333;
+}
+
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #7DDFD6;
+  color: #333;
+  font-weight: bold;
+}
+
+#record-btn {
+  padding: 12px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+#record-btn.start {
+  background-color: #7DDFD6;
+}
+
+#record-btn.stop {
+  background-color: #C00000;
+  color: white;
+}
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.hidden {
+  display: none;
+}
+
+#status-text {
+  font-weight: bold;
+}
+
+.last-file {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(0,0,0,0.2);
+  padding: 5px;
+  border-radius: 4px;
+}
+
+#last-filename {
+  font-style: italic;
+}

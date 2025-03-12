@@ -1,0 +1,62 @@
+{
+  "manifest_version": 3,
+  "name": "Crazy Screenshot",
+  "version": "1.0.0",
+  "description": "自动截取鼠标点击时的页面内容",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage",
+    "tabs",
+    "scripting",
+    "notifications",
+    "downloads.shelf"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://*.google.com/*",
+    "https://www.google.com/*",
+    "https://google.com/*",
+    "http://*/*", 
+    "https://*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>", 
+        "https://*.google.com/*", 
+        "https://www.google.com/*",
+        "https://google.com/*",
+        "http://*/*", 
+        "https://*/*"
+      ],
+      "js": ["content.js"],
+      "all_frames": false,
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["images/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "incognito": "split"
+}
