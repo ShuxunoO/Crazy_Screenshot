@@ -3,7 +3,7 @@
     <img src="./access/icon128.png" alt="Crazy Screenshot logo" width="32" height="32" style="vertical-align: middle; margin-right: 10px;">
     Crazy Screenshot 📸✨
   </h1>
-  
+
   <p>
     <a href="#功能特点"><img src="https://img.shields.io/badge/版本-0.1.0-blue" alt="版本"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/许可证-MIT-green" alt="许可证"></a>
@@ -96,7 +96,7 @@ Crazy Screenshot 是一个强大的 Google Chrome 浏览器扩展程序，为用
 2. 解压下载的ZIP文件到本地文件夹
 3. 打开Chrome浏览器，在地址栏输入 `chrome://extensions/`
 4. 在右上角启用"开发者模式"
-   ![开发者模式](./access/developer_mode.png)
+   <img src="./access/developer_mode.png" alt="开发者模式" style="zoom:80%;" />
 5. 点击"加载已解压的扩展程序"按钮
 6. 选择解压后的项目文件夹
 7. 扩展程序将被添加到Chrome浏览器中
@@ -109,19 +109,19 @@ Crazy Screenshot 是一个强大的 Google Chrome 浏览器扩展程序，为用
    1. 点击Chrome工具栏中的`设置`图标
    2. 选择`下载内容`
    3. 点击`更改`之后选择保存的路径
-   ![修改保存路径](./access/change_savepath.png)
+   <img src="./access/change_savepath.png" alt="修改保存路径" style="zoom:67%;" />
    - 确认设置
 
 2. **▶️ 开始录制**：
    - 点击扩展图标打开控制面板
    - 点击"Start"按钮开始录制
    - 此时每次点击鼠标或使用快捷键(Ctrl+Shift+Q)都会自动截取当前页面
-   ![开始录制](./access/start_v2.png)
+   <img src="./access/start_v2.png" alt="开始录制" style="zoom:50%;" />
 
 3. **⏹️ 停止录制**：
    - 再次点击"Stop"按钮停止录制
    - 重新录制之后会重新记数
-   ![停止录制](./access/stop_v2.png)
+   <img src="./access/stop_v2.png" alt="停止录制" style="zoom:50%;" />
 
 ### ⚙️ 功能设置
 
