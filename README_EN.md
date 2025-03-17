@@ -40,23 +40,7 @@ Crazy Screenshot is a Google Chrome browser extension designed to provide automa
 ## Demo
 
 <div align="center">
-  <!-- Method 1: Using video tag (may not work on GitHub) -->
-  <video width="600" controls>
-    <source src="./access/crazy_screenshot_demo.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-  
-  <!-- Method 2: Using badge to link to video -->
-  <p>
-    <a href="./access/crazy_screenshot_demo.mp4">
-      <img src="https://img.shields.io/badge/Watch Demo-Click Here-blue" alt="Watch Demo Video">
-    </a>
-  </p>
-  
-  <!-- Method 3: Providing direct download link -->
-  <p>
-    <strong>Demo Video:</strong> <a href="./access/crazy_screenshot_demo.mp4" download>Download video</a> to see the extension in action
-  </p>
+  <video src="./access/crazy_screenshot_demo.mp4" data-canonical-src="./access/crazy_screenshot_demo.mp4" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-height:640px; min-height: 200px"></video>
 </div>
 
 ## Development Status
@@ -67,11 +51,17 @@ Crazy Screenshot is a Google Chrome browser extension designed to provide automa
   - [x] Monitor user mouse click events and automatically trigger screenshots ✅ 
   - [x] Provide start/stop recording functionality for user control ✅ 
   - [x] Display the number of images captured in the current session ✅ 
+  - [x] Support screenshot delay settings for delayed capture ✅
+  - [x] Support hotkey settings for combination key + click triggering ✅
+  - [x] Support double-click mode to prevent accidental triggers ✅
+  - [x] Optimize file naming with character limits and illegal character handling ✅
   - [ ] Provide visual feedback when taking screenshots 🔄
   - [ ] Support keyboard shortcuts to control recording start/stop ⏳
   - [ ] Support screenshot area selection ⏳
   
 - **Bug Fixes**
+  - [x] Fix "Receiving end does not exist" error ✅
+  - [x] Fix improper file naming issues ✅
   - [ ] Windows systems cannot save screenshots to specified directory 🔄
   - [ ] Screenshots fail on certain websites ⏳
   - [ ] Optimize memory usage to reduce memory consumption during long-term operation ⏳
@@ -79,13 +69,15 @@ Crazy Screenshot is a Google Chrome browser extension designed to provide automa
 ## Features
 
 1. **Automatic Screenshots**: Monitors user mouse click events and automatically triggers screenshots
-2. **Custom Storage Path**: Allows users to set the local directory for saving screenshots
-3. **Smart Naming**: Screenshots are automatically named using "current tab name + timestamp" for easy organization and retrieval
-4. **Recording Control**: Provides start/stop recording functionality, allowing users to control the screenshot process at any time
-5. **Visual Feedback**: Provides visual feedback when taking screenshots, letting users know when a screenshot is completed
-6. **Count Statistics**: Displays the number of images captured in the current session
-7. **Google Search Optimization**: Special optimization for Google search pages
-8. **Anti-Duplicate Triggering**: Sets a minimum screenshot interval to prevent duplicate screenshots from frequent clicks
+2. **Delayed Capture**: Set a delay of several seconds after clicking before taking a screenshot, useful for capturing hover effects
+3. **Hotkey Triggering**: Support setting combination keys + click to trigger screenshots, avoiding accidental operations
+4. **Double-Click Mode**: Support double-click to trigger screenshots, further preventing accidental triggers
+5. **Smart Naming**: Screenshots are automatically named using "current tab name + timestamp", with tab name length limits and illegal character handling
+6. **Recording Control**: Provides start/stop recording functionality, allowing users to control the screenshot process at any time
+7. **Visual Feedback**: Provides visual feedback when taking screenshots, letting users know when a screenshot is completed
+8. **Count Statistics**: Displays the number of images captured in the current session
+9. **Google Search Optimization**: Special optimization for Google search pages
+10. **Anti-Duplicate Triggering**: Sets a minimum screenshot interval to prevent duplicate screenshots from frequent clicks
 
 ## Installation
 

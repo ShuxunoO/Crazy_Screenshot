@@ -1,175 +1,291 @@
 document.addEventListener('DOMContentLoaded', function() {
-  const directoryPathInput = document.getElementById('directory-path');
-  const directoryBtn = document.getElementById('directory-btn');
-  const recordBtn = document.getElementById('record-btn');
-  const statusText = document.getElementById('status-text');
-  const counterElement = document.getElementById('counter');
-  const countElement = document.getElementById('count');
-  const lastFilenameElement = document.getElementById('last-filename');
-
-  // 从存储中获取保存路径
-  chrome.storage.local.get(['downloadFolder', 'isRecording', 'screenshotCount', 'lastFilename'], function(result) {
-    console.log("获取到的存储信息:", result);
-    if (result.downloadFolder) {
-      directoryPathInput.value = result.downloadFolder;
+  // 获取DOM元素
+  const delayInput = document.getElementById('delay-input');
+  const hotkeyInput = document.getElementById('hotkey-input');
+  const doubleClickCheckbox = document.getElementById('double-click');
+  const resetBtn = document.getElementById('reset-btn');
+  const toggleBtn = document.getElementById('toggle-btn');
+  const capturedContainer = document.getElementById('captured-container');
+  const capturedCount = document.getElementById('captured-count');
+  
+  // 当前按下的按键
+  let currentKeys = new Set();
+  // 当前热键组合
+  let currentHotkey = '';
+  
+  // 从存储中获取设置
+  chrome.storage.local.get(['delay', 'hotkey', 'doubleClick', 'isRecording', 'screenshotCount'], function(result) {
+    // 设置延迟
+    if (result.delay !== undefined) {
+      delayInput.value = result.delay.toFixed(1) + 's';
+    }
+    
+    // 设置热键
+    if (result.hotkey) {
+      hotkeyInput.value = result.hotkey;
+      currentHotkey = result.hotkey;
+    }
+    
+    // 设置双击
+    if (result.doubleClick !== undefined) {
+      doubleClickCheckbox.checked = result.doubleClick;
     }
     
     // 恢复录制状态
     if (result.isRecording) {
       startRecordingUI();
-      countElement.textContent = result.screenshotCount || 0;
-      if (result.lastFilename) {
-        lastFilenameElement.textContent = result.lastFilename;
-        lastFilenameElement.parentElement.classList.remove('hidden');
+      
+      // 显示已捕获数量
+      if (result.screenshotCount !== undefined) {
+        capturedCount.textContent = result.screenshotCount;
+        capturedContainer.classList.remove('hidden');
       }
     }
   });
-
-  // 目录选择按钮点击事件
-  directoryBtn.addEventListener('click', function() {
-    // 获取当前保存的目录路径（如果有）
-    chrome.storage.local.get(['downloadFolder'], function(result) {
-      // 提示用户输入完整的文件夹路径
-      const defaultPath = result.downloadFolder || "";
-      
-      const message = `请输入保存截图的完整文件夹路径：
-      
-- Windows系统示例: C:\\Users\\Username\\Pictures\\Screenshots
-- Mac/Linux示例: /Users/username/Pictures/Screenshots
-
-注意：
-1. 请确保该目录已存在且有写入权限
-2. 在Windows系统上，Chrome扩展可能无法直接访问绝对路径
-3. 如果截图未保存到指定位置，请检查浏览器的默认下载文件夹`;
-      
-      const folderPath = prompt(message, defaultPath);
-      
-      if (folderPath && folderPath.trim() !== "") {
-        const path = folderPath.trim();
-        console.log("用户设置的保存路径:", path);
-        
-        // 检查是否是Windows路径
-        const isWindowsPath = path.match(/^[a-zA-Z]:/);
-        if (isWindowsPath) {
-          showToast('⚠️ Windows系统如果截图未保存到指定位置，请检查浏览器默认下载文件夹');
-        }
-        
-        // 保存用户输入的完整路径
-        chrome.storage.local.set({ 
-          downloadFolder: path,
-          // 记住上次设置的时间
-          lastDirectorySetTime: Date.now()
-        }, function() {
-          if (chrome.runtime.lastError) {
-            console.error("保存路径失败:", chrome.runtime.lastError);
-            showToast('❗ 保存目录设置失败');
-          } else {
-            console.log("保存路径成功:", path);
-            // 更新UI
-            directoryPathInput.value = path;
-            statusText.textContent = "Ready";
-            showToast('✅ 保存目录已设置');
-            
-            // 在后台记录目录设置
-            chrome.runtime.sendMessage({ 
-              action: 'directorySet', 
-              path: path 
-            }, function(response) {
-              console.log("后台响应:", response);
-            });
+  
+  // 延迟输入框事件
+  delayInput.addEventListener('input', function() {
+    // 移除非数字、非小数点内容，保留s
+    let value = this.value.replace(/[^\d.s]/g, '');
+    
+    // 确保只有一个单位s
+    if (value.indexOf('s') !== value.lastIndexOf('s')) {
+      value = value.replace(/s/g, '') + 's';
+    }
+    
+    // 如果末尾没有s，添加s
+    if (!value.endsWith('s')) {
+      value += 's';
+    }
+    
+    // 移除s以处理数值逻辑
+    let numValue = value.replace('s', '');
+    
+    // 限制只有一个小数点
+    if (numValue.split('.').length > 2) {
+      numValue = numValue.slice(0, numValue.lastIndexOf('.')) + numValue.slice(numValue.lastIndexOf('.') + 1);
+    }
+    
+    // 限制小数点后只有一位
+    const parts = numValue.split('.');
+    if (parts.length > 1 && parts[1].length > 1) {
+      numValue = parts[0] + '.' + parts[1].slice(0, 1);
+    }
+    
+    // 更新输入框值
+    this.value = numValue + 's';
+    
+    // 保存设置
+    const delay = parseFloat(numValue) || 0;
+    chrome.storage.local.set({ delay });
+    
+    // 如果正在录制，通知后台脚本更新设置
+    chrome.storage.local.get(['isRecording'], function(result) {
+      if (result.isRecording) {
+        chrome.runtime.sendMessage({
+          action: 'updateSettings',
+          settings: {
+            delay: delay
           }
+        }).catch(error => {
+          console.error('发送更新延迟设置消息失败:', error);
+          // 此错误不影响用户体验，所以只记录不处理
         });
-      } else {
-        showToast('❗ 未设置保存目录');
       }
     });
   });
-
-  // 录制按钮点击事件
-  recordBtn.addEventListener('click', function() {
-    chrome.storage.local.get(['isRecording', 'downloadFolder'], function(result) {
+  
+  // 热键输入框获取焦点时
+  hotkeyInput.addEventListener('focus', function() {
+    hotkeyInput.placeholder = "按下组合键...";
+    hotkeyInput.value = '';
+    currentKeys.clear();
+  });
+  
+  // 热键输入框失去焦点时
+  hotkeyInput.addEventListener('blur', function() {
+    if (currentKeys.size === 0 && !currentHotkey) {
+      hotkeyInput.value = '';
+      hotkeyInput.placeholder = "按下组合键...";
+    } else if (currentKeys.size === 0) {
+      hotkeyInput.value = currentHotkey;
+    }
+  });
+  
+  // 监听键盘按下事件
+  document.addEventListener('keydown', function(e) {
+    // 只有当热键输入框获得焦点时才处理
+    if (document.activeElement === hotkeyInput) {
+      e.preventDefault();
+      
+      // 添加按键到集合
+      if (e.key !== 'Meta' && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Shift') {
+        currentKeys.add(e.key);
+      }
+      
+      // 添加修饰键
+      if (e.ctrlKey) currentKeys.add('Ctrl');
+      if (e.altKey) currentKeys.add('Alt');
+      if (e.shiftKey) currentKeys.add('Shift');
+      if (e.metaKey) currentKeys.add('Meta');
+      
+      // 更新显示
+      const hotkeyString = Array.from(currentKeys).join('+');
+      hotkeyInput.value = hotkeyString;
+      
+      // 保存热键设置
+      currentHotkey = hotkeyString;
+      chrome.storage.local.set({ hotkey: hotkeyString });
+      
+      // 如果正在录制，通知后台脚本更新设置
+      chrome.storage.local.get(['isRecording'], function(result) {
+        if (result.isRecording) {
+          chrome.runtime.sendMessage({
+            action: 'updateSettings',
+            settings: {
+              hotkey: hotkeyString
+            }
+          }).catch(error => {
+            console.error('发送更新热键设置消息失败:', error);
+            // 此错误不影响用户体验，所以只记录不处理
+          });
+        }
+      });
+    }
+  });
+  
+  // 双击复选框事件
+  doubleClickCheckbox.addEventListener('change', function() {
+    const doubleClick = this.checked;
+    
+    // 更新UI提示
+    const modeText = doubleClick ? '双击截屏' : '单击截屏';
+    
+    // 保存设置
+    chrome.storage.local.set({ doubleClick });
+    
+    // 如果正在录制，通知后台脚本更新设置
+    chrome.storage.local.get(['isRecording'], function(result) {
+      if (result.isRecording) {
+        chrome.runtime.sendMessage({
+          action: 'updateSettings',
+          settings: {
+            doubleClick: doubleClick
+          }
+        }).catch(error => {
+          console.error('发送更新双击设置消息失败:', error);
+          // 此错误不影响用户体验，所以只记录而不处理
+        });
+        showToast(`已切换为${modeText}模式`);
+      } else {
+        showToast(`已设置为${modeText}模式`);
+      }
+    });
+  });
+  
+  // 重置按钮事件
+  resetBtn.addEventListener('click', function() {
+    // 重置所有设置
+    delayInput.value = '0.0s';
+    hotkeyInput.value = '';
+    doubleClickCheckbox.checked = false;
+    currentHotkey = '';
+    currentKeys.clear();
+    
+    // 保存重置后的设置
+    chrome.storage.local.set({
+      delay: 0.0,
+      hotkey: '',
+      doubleClick: false
+    });
+    
+    // 显示重置成功提示
+    showToast('设置已重置');
+  });
+  
+  // 开始/停止按钮事件
+  toggleBtn.addEventListener('click', function() {
+    chrome.storage.local.get(['isRecording'], function(result) {
       const isRecording = result.isRecording || false;
       
       if (!isRecording) {
-        // 检查是否已设置保存目录
-        if (!result.downloadFolder) {
-          showToast('❗ 请先设置保存目录');
-          return;
-        }
-        
         // 开始录制
         chrome.storage.local.set({
           isRecording: true,
-          screenshotCount: 0,
-          lastFilename: ""
+          screenshotCount: 0
         });
-        
-        console.log("开始录制，目录:", result.downloadFolder);
         
         // 通知后台脚本开始录制
-        chrome.runtime.sendMessage({ 
+        chrome.runtime.sendMessage({
           action: 'startRecording',
-          downloadFolder: result.downloadFolder
+          settings: {
+            delay: parseFloat(delayInput.value.replace('s', '')) || 0,
+            hotkey: hotkeyInput.value,
+            doubleClick: doubleClickCheckbox.checked
+          }
+        }).catch(error => {
+          console.error('发送开始录制消息失败:', error);
+          // 如果是连接问题，尝试延迟后重新发送
+          if (error.message.includes('Receiving end does not exist')) {
+            setTimeout(() => {
+              chrome.runtime.sendMessage({
+                action: 'startRecording',
+                settings: {
+                  delay: parseFloat(delayInput.value.replace('s', '')) || 0,
+                  hotkey: hotkeyInput.value,
+                  doubleClick: doubleClickCheckbox.checked
+                }
+              }).catch(e => console.error('重试发送开始录制消息失败:', e));
+            }, 500);
+          }
         });
+        
         startRecordingUI();
+        capturedCount.textContent = '0'; // 重置计数
       } else {
         // 停止录制
         chrome.storage.local.set({ isRecording: false });
         
         // 通知后台脚本停止录制
-        chrome.runtime.sendMessage({ action: 'stopRecording' });
+        chrome.runtime.sendMessage({ action: 'stopRecording' })
+          .catch(error => {
+            console.error('发送停止录制消息失败:', error);
+            // 这里不需要重试，因为即使消息发送失败，我们也已经在存储中设置了isRecording=false
+            stopRecordingUI();
+          });
+        
         stopRecordingUI();
       }
     });
   });
-
+  
   // 监听截图计数更新
   chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.action === 'screenshotTaken') {
-      countElement.textContent = request.count;
-      
-      if (request.filename) {
-        lastFilenameElement.textContent = request.filename;
-        lastFilenameElement.parentElement.classList.remove('hidden');
-        chrome.storage.local.set({ lastFilename: request.filename });
-      }
-      
-      sendResponse({ received: true });
-    } else if (request.action === 'directoryError') {
-      // 显示目录错误提示
-      showToast(request.message || '❗ 保存截图失败');
-      console.error('目录错误:', request.message);
-      
-      // 如果是Windows路径问题，显示额外提示
-      if (directoryPathInput.value.match(/^[a-zA-Z]:/)) {
-        setTimeout(() => {
-          showToast('⚠️ Windows路径可能需要特殊权限，请检查浏览器默认下载文件夹');
-        }, 3000);
-      }
+      capturedCount.textContent = request.count;
+      capturedContainer.classList.remove('hidden');
       
       sendResponse({ received: true });
     }
     return true;
   });
-
+  
   // 开始录制UI更新
   function startRecordingUI() {
-    recordBtn.textContent = 'Stop';
-    recordBtn.classList.remove('start');
-    recordBtn.classList.add('stop');
-    statusText.textContent = 'Recording...';
-    counterElement.classList.remove('hidden');
+    toggleBtn.textContent = 'Stop';
+    toggleBtn.classList.remove('start-btn');
+    toggleBtn.classList.add('stop-btn');
+    capturedContainer.classList.remove('hidden');
   }
-
+  
   // 停止录制UI更新
   function stopRecordingUI() {
-    recordBtn.textContent = 'Start';
-    recordBtn.classList.remove('stop');
-    recordBtn.classList.add('start');
-    statusText.textContent = 'Ready';
-    counterElement.classList.add('hidden');
+    toggleBtn.textContent = 'Start';
+    toggleBtn.classList.remove('stop-btn');
+    toggleBtn.classList.add('start-btn');
+    capturedContainer.classList.add('hidden'); // 隐藏捕获计数行
   }
-
+  
   // 显示toast提示
   function showToast(message) {
     const toast = document.createElement('div');
@@ -185,22 +301,25 @@ document.addEventListener('DOMContentLoaded', function() {
     toast.style.zIndex = '1000';
     toast.style.maxWidth = '90%';
     toast.style.textAlign = 'center';
-    toast.style.wordBreak = 'break-word';
     toast.style.fontSize = '14px';
-    toast.style.lineHeight = '1.4';
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
     
     document.body.appendChild(toast);
     
-    // 根据消息长度决定显示时间
-    const displayTime = Math.max(3000, message.length * 100);
-    
+    // 显示动画
     setTimeout(function() {
-      toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.5s ease';
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(-5px)';
       
       setTimeout(function() {
-        document.body.removeChild(toast);
-      }, 500);
-    }, displayTime);
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(0px)';
+        
+        setTimeout(function() {
+          document.body.removeChild(toast);
+        }, 300);
+      }, 2000);
+    }, 10);
   }
 });

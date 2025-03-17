@@ -5,7 +5,7 @@
   </h1>
   
   <p>
-    <a href="#功能特点"><img src="https://img.shields.io/badge/版本-1.0.0-blue" alt="版本"></a>
+    <a href="#功能特点"><img src="https://img.shields.io/badge/版本-0.1.0-blue" alt="版本"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/许可证-MIT-green" alt="许可证"></a>
     <a href="#安装方法"><img src="https://img.shields.io/badge/平台-Chrome-yellow" alt="平台"></a>
   </p>
@@ -35,17 +35,12 @@
 
 ---
 
-Crazy Screenshot是一个Google Chrome浏览器扩展程序，旨在为用户提供自动截图功能。当用户开启录制模式后，每次点击鼠标都会自动触发截屏，将当前浏览器窗口内容保存到用户指定的本地目录中。这个工具特别适合采集网页训练数据、需要记录操作流程、创建教程或进行用户体验测试的场景。
+Crazy Screenshot是一个Google Chrome浏览器扩展程序，旨在为用户提供自动截图功能。当用户开启录制模式后，每次点击鼠标都会自动触发截屏，将当前浏览器窗口内容保存到用户指定的本地目录中。工具特别适合采集网页训练数据、需要记录操作流程、创建教程或进行用户体验测试的场景。把插件的录制功能打开，正常使用浏览器就可以收集数据 如果浏览器用得多的话 一周就可以搞几千张，而且感知很弱。
 
 ## 功能演示
 
 <div align="center">
-  <!-- 方法1: 使用video标签 (在GitHub上可能不起作用) -->
-  <video width="600" controls>
-    <source src="./access/crazy_screenshot_demo.mp4" type="video/mp4">
-    您的浏览器不支持视频标签。
-  </video>
-  
+  <video src="./access/crazy_screenshot_demo.mp4" data-canonical-src="./access/crazy_screenshot_demo.mp4" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-height:640px; min-height: 200px"></video>
 </div>
 
 ## 开发状态
@@ -56,31 +51,38 @@ Crazy Screenshot是一个Google Chrome浏览器扩展程序，旨在为用户提
   - [x] 监听用户鼠标点击事件，自动触发截屏操作 ✅ 
   - [x] 提供开始/停止录制功能，用户可随时控制截图过程 ✅ 
   - [x] 显示当前会话已截取的图片数量 ✅ 
+  - [x] 支持截图延迟设置，可延迟数秒后截图 ✅
+  - [x] 支持双击模式，防止误触 ✅
+  - [x] 优化文件命名，标签名限制字符数，去除非法字符 ✅
   - [ ] 截图时提供视觉反馈，让用户知道截图已完成 🔄
+  - [x] 支持热键设置，可设置组合键+点击触发截图 ⏳
   - [ ] 支持快捷键控制录制开始/停止 ⏳
   - [ ] 支持截图区域选择 ⏳
   
 - **问题修复**
-  - [ ] Windows 系统不能将截图保存到指定目录 🔄
-  - [ ] 在某些网站上截图失败 ⏳
-  - [ ] 优化内存使用，减少长时间运行时的内存占用 ⏳
+  - [x] 修复"Receiving end does not exist"错误 ✅
+  - [x] 修复文件命名处理不当的问题 ✅
+
+
 
 ## 功能特点
 
 1. **自动截屏**：监听用户鼠标点击事件，自动触发截屏操作
-2. **自定义存储路径**：允许用户设置截图保存的本地目录
-3. **智能命名**：截图自动以"当前标签页名称+时间戳"方式命名，便于整理和查找
-4. **录制控制**：提供开始/停止录制功能，用户可随时控制截图过程
-5. **视觉反馈**：截图时提供视觉反馈，让用户知道截图已完成
-6. **计数统计**：显示当前会话已截取的图片数量
-7. **Google搜索优化**：针对Google搜索页面进行了特殊优化处理
-8. **防重复触发**：设置最小截图间隔，防止频繁点击导致的重复截图
+2. **延迟截图**：可设置点击后延迟数秒再截图，方便捕捉悬浮效果
+3. **热键触发**：支持设置组合键+点击触发截图，避免误操作
+4. **双击模式**：支持双击触发截图，进一步防止误触
+5. **智能命名**：截图自动以"当前标签页名称+时间戳"方式命名，限制标签名长度且去除非法字符
+6. **录制控制**：提供开始/停止录制功能，用户可随时控制截图过程
+7. **视觉反馈**：截图时提供视觉反馈，让用户知道截图已完成
+8. **计数统计**：显示当前会话已截取的图片数量
+9. **Google搜索优化**：针对Google搜索页面进行了特殊优化处理
+10. **防重复触发**：设置最小截图间隔，防止频繁点击导致的重复截图
 
 ## 安装方法
 
 ### 从Chrome网上应用店安装
 
-1. 目前尚未上架Chrome网上应用店 😝
+1. 目前尚未上架Chrome网上应用店 😐
 
 ### 开发者模式安装
 
@@ -112,11 +114,7 @@ Crazy Screenshot是一个Google Chrome浏览器扩展程序，旨在为用户提
    - 再次点击"Stop"按钮停止录制
    - 状态将变为"Ready"
 
-### 路径设置示例
 
-- **Windows系统**：`C:\Users\Username\Pictures\Screenshots`
-- **Mac系统**：`/Users/username/Pictures/Screenshots`
-- **Linux系统**：`/home/username/Pictures/Screenshots`
 
 ### 注意事项
 

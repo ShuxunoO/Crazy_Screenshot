@@ -4,29 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Crazy Screenshot</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="container">
     <h1>Crazy Screenshot</h1>
     
-    <div class="directory-selector">
-      <label for="directory-path">保存目录:</label>
-      <input type="text" id="directory-path" placeholder="请选择保存目录..." readonly>
-      <button id="directory-btn">Set</button>
+    <div class="setting-row">
+      <label for="delay-input">Delay:</label>
+      <input type="text" id="delay-input" value="0.0s" class="setting-input">
     </div>
     
-    <div class="status-bar">
-      <span id="status-text">Ready</span>
-      <span id="counter" class="hidden">已截图: <span id="count">0</span></span>
+    <div class="setting-row">
+      <label for="hotkey-input">Hotkey:</label>
+      <input type="text" id="hotkey-input" class="setting-input" readonly placeholder="按下组合键...">
     </div>
     
-    <div class="last-file hidden">
-      <span>最近保存: </span>
-      <span id="last-filename"></span>
+    <div class="setting-row">
+      <label for="double-click">Double Click:</label>
+      <div class="checkbox-container">
+        <input type="checkbox" id="double-click">
+        <label for="double-click" class="checkbox-label"></label>
+      </div>
+      <button id="reset-btn">Reset</button>
     </div>
     
-    <button id="record-btn" class="start">Start</button>
+    <div id="captured-container" class="setting-row hidden">
+      <label>Captured:</label>
+      <div id="captured-count" class="captured-count">0</div>
+    </div>
+    
+    <button id="toggle-btn" class="start-btn">Start</button>
   </div>
 
   <script src="popup.js"></script>

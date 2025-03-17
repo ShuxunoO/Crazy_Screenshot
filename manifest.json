@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Crazy Screenshot",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "自动截取鼠标点击时的页面内容",
   "permissions": [
     "activeTab",

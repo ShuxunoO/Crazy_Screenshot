@@ -1,22 +1,6 @@
 // 检查脚本是否已经被注入，防止重复注入
 if (window._crazyScreenshotInjected) {
   console.log('Crazy Screenshot 内容脚本已经加载，跳过重复注入');
-  // 重新连接到背景脚本更新状态
-  (async function() {
-    try {
-      const response = await chrome.runtime.sendMessage({ 
-        action: 'checkStatus',
-        url: window.location.href
-      });
-      if (response && response.isRecording !== undefined) {
-        window._crazyScreenshotRecording = response.isRecording;
-      }
-    } catch (error) {
-      console.error('恢复连接失败:', error);
-    }
-  })();
-  
-  // 退出脚本执行
   throw new Error('脚本已注入，防止重复执行');
 }
 
@@ -24,45 +8,249 @@ if (window._crazyScreenshotInjected) {
 window._crazyScreenshotInjected = true;
 
 // 全局变量
-window._crazyScreenshotRecording = false;
+let isRecording = false;
 let clickTimeout = null;
-let isGooglePage = false;
 const MIN_CLICK_INTERVAL = 500; // 毫秒
+let lastClickTime = 0;
+const DOUBLE_CLICK_THRESHOLD = 300; // 毫秒
 
-// 获取录制状态的getter和setter
-function isRecording() {
-  return window._crazyScreenshotRecording;
-}
+// 截图设置
+let screenshotSettings = {
+  delay: 0,
+  hotkey: '',
+  doubleClick: false
+};
 
-function setRecording(value) {
-  window._crazyScreenshotRecording = value;
-}
+// 当前按下的按键
+const pressedKeys = new Set();
 
-// 在页面加载时检测是否是Google页面
-(function detectGooglePage() {
-  const url = window.location.href;
-  isGooglePage = url.includes('google.com');
-  if (isGooglePage) {
-    console.log('检测到Google页面，启用特殊处理模式');
+// 初始化
+(async function initialize() {
+  try {
+    // 通知后台脚本内容脚本已就绪
+    const response = await chrome.runtime.sendMessage({ action: 'contentScriptReady' })
+      .catch(error => {
+        // 处理"Receiving end does not exist"错误
+        if (error.message.includes('Receiving end does not exist')) {
+          console.log('后台脚本未准备好接收消息，可能扩展刚刚加载或刷新');
+          // 使用默认设置继续
+          return { isRecording: false, settings: screenshotSettings };
+        }
+        // 其他错误则抛出
+        throw error;
+      });
+    
+    // 更新录制状态和设置
+    if (response) {
+      isRecording = response.isRecording || false;
+      
+      if (response.settings) {
+        screenshotSettings = response.settings;
+      }
+      
+      console.log('初始化完成，录制状态:', isRecording, '设置:', screenshotSettings);
+    }
+    
+    // 设置事件监听器
+    setupEventListeners();
+  } catch (error) {
+    console.error('初始化失败:', error);
+    // 出错时仍然设置事件监听器，以便后续消息能正常工作
+    setupEventListeners();
   }
 })();
 
-// 向后台脚本发送消息的包装函数，带有失败恢复
-async function sendMessageToBackground(message) {
-  try {
-    return await chrome.runtime.sendMessage(message);
-  } catch (error) {
-    console.error('发送消息到背景脚本失败:', error);
-    // 处理扩展上下文失效的情况
-    if (error.message && (
-        error.message.includes('Extension context invalidated') ||
-        error.message.includes('The message port closed'))) {
-      console.log('扩展上下文已失效，将重置录制状态');
-      setRecording(false);
-      // 不要抛出错误，允许代码继续执行
-      return { isRecording: false, error: error.message };
+// 设置事件监听器
+function setupEventListeners() {
+  // 点击事件
+  document.addEventListener('click', handleClick, true);
+  
+  // 键盘事件（用于热键检测）
+  document.addEventListener('keydown', handleKeyDown, true);
+  document.addEventListener('keyup', handleKeyUp, true);
+  
+  // 监听来自页面内部的消息（用于Google搜索页面等特殊处理）
+  window.addEventListener('message', handleWindowMessage, false);
+}
+
+// 处理键盘按下事件
+function handleKeyDown(event) {
+  // 记录按下的键
+  if (event.key === 'Control' || event.key === 'Ctrl') {
+    pressedKeys.add('Ctrl');
+  } else if (event.key === 'Alt') {
+    pressedKeys.add('Alt');
+  } else if (event.key === 'Shift') {
+    pressedKeys.add('Shift');
+  } else if (event.key === 'Meta') {
+    pressedKeys.add('Meta');
+  } else {
+    pressedKeys.add(event.key);
+  }
+}
+
+// 处理键盘释放事件
+function handleKeyUp(event) {
+  // 移除释放的键
+  if (event.key === 'Control' || event.key === 'Ctrl') {
+    pressedKeys.delete('Ctrl');
+  } else if (event.key === 'Alt') {
+    pressedKeys.delete('Alt');
+  } else if (event.key === 'Shift') {
+    pressedKeys.delete('Shift');
+  } else if (event.key === 'Meta') {
+    pressedKeys.delete('Meta');
+  } else {
+    pressedKeys.delete(event.key);
+  }
+}
+
+// 检查热键是否匹配
+function checkHotkey() {
+  if (!screenshotSettings.hotkey) return true;
+  
+  const requiredKeys = screenshotSettings.hotkey.split('+');
+  
+  // 检查所有必需的键是否都被按下
+  for (const key of requiredKeys) {
+    if (!pressedKeys.has(key)) {
+      return false;
     }
-    throw error; // 对于其他类型的错误，继续抛出
+  }
+  
+  // 检查是否有额外的修饰键被按下
+  const modifierKeys = ['Ctrl', 'Alt', 'Shift', 'Meta'];
+  for (const key of pressedKeys) {
+    if (modifierKeys.includes(key) && !requiredKeys.includes(key)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+// 处理窗口消息
+function handleWindowMessage(event) {
+  // 检查是否是我们的消息
+  if (event.data && event.data.type === 'CRAZY_SCREENSHOT_CLICK') {
+    console.log('收到页面内部点击消息');
+    
+    // 模拟点击事件
+    const fakeEvent = { target: document.body };
+    handleClick(fakeEvent);
+  }
+}
+
+// 点击事件处理函数
+async function handleClick(event) {
+  // 检查是否正在录制
+  if (!isRecording) return;
+  
+  console.log('检测到点击，正在录制中，双击模式:', screenshotSettings.doubleClick);
+  
+  try {
+    // 检查热键是否匹配
+    const hotkeyMatched = checkHotkey();
+    if (!hotkeyMatched) {
+      console.log('热键不匹配，忽略点击');
+      return;
+    }
+    
+    // 当前时间
+    const currentTime = new Date().getTime();
+    
+    // 检查是否需要双击
+    if (screenshotSettings.doubleClick) {
+      // 双击模式：如果两次点击间隔小于阈值，触发截图
+      if (currentTime - lastClickTime < DOUBLE_CLICK_THRESHOLD) {
+        console.log('检测到双击，触发截图');
+        // 重设点击时间防止连续触发
+        lastClickTime = 0;
+        
+        // 设置防抖动锁
+        if (clickTimeout) {
+          clearTimeout(clickTimeout);
+        }
+        clickTimeout = setTimeout(() => {
+          clickTimeout = null;
+        }, MIN_CLICK_INTERVAL);
+        
+        // 发送点击事件到后台
+        const response = await chrome.runtime.sendMessage({
+          action: 'clickDetected',
+          hotkeyPressed: hotkeyMatched,
+          isDoubleClick: true
+        });
+        
+        console.log('点击事件响应:', response);
+      } else {
+        // 记录第一次点击时间
+        lastClickTime = currentTime;
+        console.log('记录第一次点击，等待双击');
+      }
+    } else {
+      // 单击模式：直接触发
+      console.log('单击模式，直接触发');
+      
+      // 防止频繁点击
+      if (clickTimeout) {
+        console.log('点击过于频繁，忽略');
+        return;
+      }
+      
+      // 设置防抖动锁
+      clickTimeout = setTimeout(() => {
+        clickTimeout = null;
+      }, MIN_CLICK_INTERVAL);
+      
+      // 发送点击事件到后台
+      const response = await chrome.runtime.sendMessage({
+        action: 'clickDetected',
+        hotkeyPressed: hotkeyMatched
+      });
+      
+      console.log('点击事件响应:', response);
+    }
+  } catch (error) {
+    console.error('处理点击事件失败:', error);
+    
+    // 清除超时
+    if (clickTimeout) {
+      clearTimeout(clickTimeout);
+      clickTimeout = null;
+    }
+  }
+}
+
+// 显示视觉反馈
+function showVisualFeedback() {
+  try {
+    // 创建反馈元素
+    const feedback = document.createElement('div');
+    feedback.style.position = 'fixed';
+    feedback.style.top = '0';
+    feedback.style.left = '0';
+    feedback.style.width = '100%';
+    feedback.style.height = '100%';
+    feedback.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+    feedback.style.zIndex = '2147483647'; // 最高层级
+    feedback.style.pointerEvents = 'none'; // 不阻止点击
+    feedback.style.transition = 'opacity 0.3s ease';
+    
+    // 添加到页面
+    document.body.appendChild(feedback);
+    
+    // 闪烁效果
+    setTimeout(() => {
+      feedback.style.opacity = '0';
+      
+      // 移除元素
+      setTimeout(() => {
+        document.body.removeChild(feedback);
+      }, 300);
+    }, 100);
+  } catch (error) {
+    console.error('显示视觉反馈失败:', error);
   }
 }
 
@@ -72,13 +260,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('内容脚本收到消息:', message);
     
     if (message.action === 'updateRecordingStatus') {
-      setRecording(message.isRecording);
-      console.log('录制状态已更新:', isRecording());
+      isRecording = message.isRecording;
+      console.log('录制状态已更新:', isRecording);
       sendResponse({ success: true });
-    } else if (message.action === 'screenshotTaken') {
+    } else if (message.action === 'showFeedback') {
       showVisualFeedback();
       sendResponse({ success: true });
+    } else if (message.action === 'updateSettings') {
+      screenshotSettings = message.settings || screenshotSettings;
+      console.log('设置已更新:', screenshotSettings);
+      // 如果更新了双击设置，重置上次点击时间
+      if (message.settings && message.settings.doubleClick !== undefined) {
+        lastClickTime = 0;
+      }
+      sendResponse({ success: true });
     }
+    
     return true; // 保持消息通道开放
   } catch (error) {
     console.error('处理消息错误:', error);
@@ -86,191 +283,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
-
-// 点击事件监听函数
-async function handleClick(event) {
-  // 防止重复触发
-  if (clickTimeout) return;
-  
-  // 如果正在录制，发送点击事件到后台
-  if (isRecording()) {
-    console.log('检测到点击，正在录制中');
-    
-    try {
-      // 在Google页面上使用不同的处理方式
-      if (isGooglePage) {
-        console.log('在Google页面上检测到点击');
-      }
-      
-      const response = await sendMessageToBackground({ 
-        action: 'clickDetected',
-        url: window.location.href
-      });
-      console.log('点击事件响应:', response);
-    } catch (error) {
-      console.error('发送点击事件失败:', error);
-      // 错误处理 - 如果是上下文失效，重置状态
-      if (error.message && error.message.includes('Extension context invalidated')) {
-        setRecording(false);
-      }
-    }
-    
-    // 设置防抖动计时器
-    clickTimeout = setTimeout(() => {
-      clickTimeout = null;
-    }, 250);
-  }
-}
-
-// 显示视觉反馈
-function showVisualFeedback() {
-  try {
-    // 为Google页面创建特殊的视觉反馈
-    const isGoogle = isGooglePage;
-    
-    // 创建视觉反馈元素
-    const feedback = document.createElement('div');
-    feedback.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background-color: rgba(0, 175, 242, 0.8);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 4px;
-      z-index: 2147483647;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    `;
-    
-    // 如果是Google页面，调整样式位置
-    if (isGoogle) {
-      feedback.style.top = '80px'; // 避开Google搜索栏
-    }
-    
-    feedback.textContent = '截图已保存! 📸';
-    
-    // 添加到页面
-    document.body.appendChild(feedback);
-    
-    // 淡出效果
-    setTimeout(() => {
-      feedback.style.transition = 'opacity 0.5s ease-out';
-      feedback.style.opacity = '0';
-      
-      // 移除元素
-      setTimeout(() => {
-        if (feedback.parentNode) {
-          document.body.removeChild(feedback);
-        }
-      }, 500);
-    }, 2000);
-  } catch (error) {
-    console.error('显示视觉反馈失败:', error);
-  }
-}
-
-// 安全地添加事件监听器
-function safeAddEventListener() {
-  try {
-    // 移除之前可能存在的监听器以避免重复
-    document.removeEventListener('click', handleClick, true);
-    // 添加点击事件监听器
-    document.addEventListener('click', handleClick, true);
-    console.log('已安全添加点击事件监听器');
-  } catch (error) {
-    console.error('添加事件监听器失败:', error);
-  }
-}
-
-// 安全地初始化脚本
-function safeInitialize() {
-  try {
-    // 添加事件监听器
-    safeAddEventListener();
-    
-    // 如果在Google页面上，可能需要特殊处理
-    if (isGooglePage) {
-      console.log('在Google页面上初始化内容脚本');
-    }
-  } catch (error) {
-    console.error('初始化失败:', error);
-  }
-}
-
-// 设置状态恢复计数，用于控制重试次数
-let statusCheckRetryCount = 0;
-const MAX_STATUS_CHECK_RETRIES = 3;
-
-// 初始化时通知后台我们的内容脚本已经准备好
-(async function() {
-  try {
-    console.log('通知后台脚本内容脚本已准备就绪');
-    const response = await sendMessageToBackground({ 
-      action: 'contentScriptReady',
-      url: window.location.href,
-      isGooglePage: isGooglePage
-    });
-    console.log('内容脚本准备就绪响应:', response);
-    
-    if (response && response.isRecording !== undefined) {
-      setRecording(response.isRecording);
-      console.log('根据后台脚本响应设置录制状态:', isRecording());
-    }
-  } catch (error) {
-    console.error('初始化通信失败:', error);
-    // 初始化错误，默认不录制
-    setRecording(false);
-  }
-  
-  // 无论如何都尝试初始化
-  safeInitialize();
-})();
-
-// 定期检查录制状态，确保状态同步
-const statusCheckInterval = setInterval(async () => {
-  try {
-    // 限制重试次数，防止大量错误日志
-    if (statusCheckRetryCount >= MAX_STATUS_CHECK_RETRIES) {
-      console.log('状态检查达到最大重试次数，停止检查');
-      clearInterval(statusCheckInterval);
-      return;
-    }
-    
-    const response = await sendMessageToBackground({ 
-      action: 'checkStatus',
-      url: window.location.href
-    });
-    
-    // 重置重试计数器，因为请求成功了
-    statusCheckRetryCount = 0;
-    
-    if (response && response.isRecording !== undefined && response.isRecording !== isRecording()) {
-      console.log('同步录制状态，从', isRecording(), '到', response.isRecording);
-      setRecording(response.isRecording);
-    }
-  } catch (error) {
-    // 增加重试计数
-    statusCheckRetryCount++;
-    console.error('检查状态错误:', error);
-    
-    // 如果是扩展上下文失效，停止状态检查
-    if (error.message && (
-        error.message.includes('Extension context invalidated') ||
-        error.message.includes('The message port closed'))) {
-      console.log('扩展上下文已失效，停止状态检查');
-      clearInterval(statusCheckInterval);
-      setRecording(false);
-    }
-  }
-}, 5000);
-
-// 添加全局更新函数，供background.js调用
-window.updateCrazyScreenshotStatus = function(newStatus) {
-  console.log('通过全局函数更新录制状态:', newStatus);
-  setRecording(newStatus);
-};
 
 // 确保内容脚本被正确注入
 console.log('Crazy Screenshot 内容脚本已加载在: ' + window.location.href);
