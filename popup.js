@@ -8,22 +8,29 @@ document.addEventListener('DOMContentLoaded', function() {
   const capturedContainer = document.getElementById('captured-container');
   const capturedCount = document.getElementById('captured-count');
   
-  // 当前按下的按键
-  let currentKeys = new Set();
-  // 当前热键组合
-  let currentHotkey = '';
+  // 设置hotkeyInput为只读
+  hotkeyInput.readOnly = true;
+  
+  // 获取当前的快捷键设置
+  if (chrome.commands) {
+    chrome.commands.getAll(function(commands) {
+      // 查找take-screenshot命令
+      const screenshotCommand = commands.find(command => command.name === 'take-screenshot');
+      if (screenshotCommand && screenshotCommand.shortcut) {
+        hotkeyInput.value = screenshotCommand.shortcut;
+      } else {
+        hotkeyInput.value = 'Ctrl+Shift+Q (默认)';
+      }
+    });
+  } else {
+    hotkeyInput.value = 'Ctrl+Shift+Q (默认)';
+  }
   
   // 从存储中获取设置
-  chrome.storage.local.get(['delay', 'hotkey', 'doubleClick', 'isRecording', 'screenshotCount'], function(result) {
+  chrome.storage.local.get(['delay', 'doubleClick', 'isRecording', 'screenshotCount'], function(result) {
     // 设置延迟
     if (result.delay !== undefined) {
       delayInput.value = result.delay.toFixed(1) + 's';
-    }
-    
-    // 设置热键
-    if (result.hotkey) {
-      hotkeyInput.value = result.hotkey;
-      currentHotkey = result.hotkey;
     }
     
     // 设置双击
@@ -95,65 +102,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
   
-  // 热键输入框获取焦点时
-  hotkeyInput.addEventListener('focus', function() {
-    hotkeyInput.placeholder = "按下组合键...";
-    hotkeyInput.value = '';
-    currentKeys.clear();
-  });
-  
-  // 热键输入框失去焦点时
-  hotkeyInput.addEventListener('blur', function() {
-    if (currentKeys.size === 0 && !currentHotkey) {
-      hotkeyInput.value = '';
-      hotkeyInput.placeholder = "按下组合键...";
-    } else if (currentKeys.size === 0) {
-      hotkeyInput.value = currentHotkey;
-    }
-  });
-  
-  // 监听键盘按下事件
-  document.addEventListener('keydown', function(e) {
-    // 只有当热键输入框获得焦点时才处理
-    if (document.activeElement === hotkeyInput) {
-      e.preventDefault();
-      
-      // 添加按键到集合
-      if (e.key !== 'Meta' && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Shift') {
-        currentKeys.add(e.key);
-      }
-      
-      // 添加修饰键
-      if (e.ctrlKey) currentKeys.add('Ctrl');
-      if (e.altKey) currentKeys.add('Alt');
-      if (e.shiftKey) currentKeys.add('Shift');
-      if (e.metaKey) currentKeys.add('Meta');
-      
-      // 更新显示
-      const hotkeyString = Array.from(currentKeys).join('+');
-      hotkeyInput.value = hotkeyString;
-      
-      // 保存热键设置
-      currentHotkey = hotkeyString;
-      chrome.storage.local.set({ hotkey: hotkeyString });
-      
-      // 如果正在录制，通知后台脚本更新设置
-      chrome.storage.local.get(['isRecording'], function(result) {
-        if (result.isRecording) {
-          chrome.runtime.sendMessage({
-            action: 'updateSettings',
-            settings: {
-              hotkey: hotkeyString
-            }
-          }).catch(error => {
-            console.error('发送更新热键设置消息失败:', error);
-            // 此错误不影响用户体验，所以只记录不处理
-          });
-        }
-      });
-    }
-  });
-  
   // 双击复选框事件
   doubleClickCheckbox.addEventListener('change', function() {
     const doubleClick = this.checked;
@@ -189,13 +137,10 @@ document.addEventListener('DOMContentLoaded', function() {
     delayInput.value = '0.0s';
     hotkeyInput.value = '';
     doubleClickCheckbox.checked = false;
-    currentHotkey = '';
-    currentKeys.clear();
     
     // 保存重置后的设置
     chrome.storage.local.set({
       delay: 0.0,
-      hotkey: '',
       doubleClick: false
     });
     

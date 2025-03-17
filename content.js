@@ -17,12 +17,8 @@ const DOUBLE_CLICK_THRESHOLD = 300; // 毫秒
 // 截图设置
 let screenshotSettings = {
   delay: 0,
-  hotkey: '',
   doubleClick: false
 };
-
-// 当前按下的按键
-const pressedKeys = new Set();
 
 // 初始化
 (async function initialize() {
@@ -65,68 +61,8 @@ function setupEventListeners() {
   // 点击事件
   document.addEventListener('click', handleClick, true);
   
-  // 键盘事件（用于热键检测）
-  document.addEventListener('keydown', handleKeyDown, true);
-  document.addEventListener('keyup', handleKeyUp, true);
-  
   // 监听来自页面内部的消息（用于Google搜索页面等特殊处理）
   window.addEventListener('message', handleWindowMessage, false);
-}
-
-// 处理键盘按下事件
-function handleKeyDown(event) {
-  // 记录按下的键
-  if (event.key === 'Control' || event.key === 'Ctrl') {
-    pressedKeys.add('Ctrl');
-  } else if (event.key === 'Alt') {
-    pressedKeys.add('Alt');
-  } else if (event.key === 'Shift') {
-    pressedKeys.add('Shift');
-  } else if (event.key === 'Meta') {
-    pressedKeys.add('Meta');
-  } else {
-    pressedKeys.add(event.key);
-  }
-}
-
-// 处理键盘释放事件
-function handleKeyUp(event) {
-  // 移除释放的键
-  if (event.key === 'Control' || event.key === 'Ctrl') {
-    pressedKeys.delete('Ctrl');
-  } else if (event.key === 'Alt') {
-    pressedKeys.delete('Alt');
-  } else if (event.key === 'Shift') {
-    pressedKeys.delete('Shift');
-  } else if (event.key === 'Meta') {
-    pressedKeys.delete('Meta');
-  } else {
-    pressedKeys.delete(event.key);
-  }
-}
-
-// 检查热键是否匹配
-function checkHotkey() {
-  if (!screenshotSettings.hotkey) return true;
-  
-  const requiredKeys = screenshotSettings.hotkey.split('+');
-  
-  // 检查所有必需的键是否都被按下
-  for (const key of requiredKeys) {
-    if (!pressedKeys.has(key)) {
-      return false;
-    }
-  }
-  
-  // 检查是否有额外的修饰键被按下
-  const modifierKeys = ['Ctrl', 'Alt', 'Shift', 'Meta'];
-  for (const key of pressedKeys) {
-    if (modifierKeys.includes(key) && !requiredKeys.includes(key)) {
-      return false;
-    }
-  }
-  
-  return true;
 }
 
 // 处理窗口消息
@@ -149,13 +85,6 @@ async function handleClick(event) {
   console.log('检测到点击，正在录制中，双击模式:', screenshotSettings.doubleClick);
   
   try {
-    // 检查热键是否匹配
-    const hotkeyMatched = checkHotkey();
-    if (!hotkeyMatched) {
-      console.log('热键不匹配，忽略点击');
-      return;
-    }
-    
     // 当前时间
     const currentTime = new Date().getTime();
     
@@ -178,7 +107,6 @@ async function handleClick(event) {
         // 发送点击事件到后台
         const response = await chrome.runtime.sendMessage({
           action: 'clickDetected',
-          hotkeyPressed: hotkeyMatched,
           isDoubleClick: true
         });
         
@@ -205,8 +133,7 @@ async function handleClick(event) {
       
       // 发送点击事件到后台
       const response = await chrome.runtime.sendMessage({
-        action: 'clickDetected',
-        hotkeyPressed: hotkeyMatched
+        action: 'clickDetected'
       });
       
       console.log('点击事件响应:', response);

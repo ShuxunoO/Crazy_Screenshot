@@ -349,8 +349,21 @@ function generateTimestampFilename(prefix = '') {
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
   
-  // 清理前缀（移除不允许的字符）
-  let cleanPrefix = prefix.replace(/[\\/:*?"<>|.]/g, '_'); // 添加点(.)到非法字符列表
+  // 清理前缀，只保留汉字、英文字符、连字符(-)和下划线(_)
+  // 使用Unicode范围匹配汉字、英文字母、数字、连字符和下划线
+  let cleanPrefix = '';
+  const validChars = Array.from(prefix).filter(char => {
+    // 匹配英文字母、数字、连字符和下划线
+    if (/[a-zA-Z0-9\-_]/.test(char)) return true;
+    
+    // 匹配汉字 (Unicode范围: 4E00-9FFF)
+    const code = char.charCodeAt(0);
+    if (code >= 0x4e00 && code <= 0x9fff) return true;
+    
+    return false;
+  });
+  
+  cleanPrefix = validChars.join('');
   
   // 限制前缀长度为10个字符/汉字
   const maxLength = 10;
@@ -359,9 +372,6 @@ function generateTimestampFilename(prefix = '') {
   if (charArray.length > maxLength) {
     cleanPrefix = charArray.slice(0, maxLength).join('');
   }
-  
-  // 移除前缀中所有的点字符
-  cleanPrefix = cleanPrefix.replace(/\./g, '_');
   
   // 如果前缀为空，使用默认前缀
   if (!cleanPrefix || cleanPrefix.trim() === '') {
@@ -561,6 +571,58 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 /**
+ * @brief 监听快捷键命令
+ */
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'take-screenshot') {
+    console.log('检测到快捷键命令: take-screenshot');
+    
+    try {
+      // 获取当前活动标签页
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      // 检查是否正在录制
+      const result = await chrome.storage.local.get(['isRecording']);
+      if (!result.isRecording) {
+        console.log('未在录制状态，忽略快捷键');
+        return;
+      }
+      
+      // 检查标签页是否有效
+      if (!activeTab || !activeTab.id || activeTab.id === chrome.runtime.id) {
+        console.log('无效的标签页', activeTab);
+        return;
+      }
+      
+      // 检查是否为扩展页面
+      if (activeTab.url && activeTab.url.startsWith('chrome-extension://')) {
+        console.log('忽略扩展页面的快捷键');
+        return;
+      }
+      
+      console.log('通过快捷键触发截图');
+      
+      // 获取延迟设置
+      const delayResult = await chrome.storage.local.get(['delay']);
+      const delay = delayResult.delay || 0;
+      
+      // 应用延迟设置
+      if (delay > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay * 1000));
+      }
+      
+      // 启动截图过程
+      await captureAndSaveScreenshot(activeTab);
+      
+      // 更新截图计数
+      updateScreenshotCount(activeTab.title || 'screenshot');
+    } catch (error) {
+      console.error('处理快捷键命令时出错:', error);
+    }
+  }
+});
+
+/**
  * @brief 处理开始录制消息
  * @param {Object} request - 请求消息
  * @param {Function} sendResponse - 响应回调
@@ -648,13 +710,6 @@ async function handleClickDetected(tab, request, sendResponse) {
     }
     lastClickTime = now;
     
-    // 检查热键设置
-    if (screenshotSettings.hotkey && !request.hotkeyPressed) {
-      console.log('需要热键，但未按下，忽略');
-      sendResponse({ success: true, ignored: true, reason: 'Hotkey not pressed' });
-      return true;
-    }
-    
     // 找到当前活动标签页
     if (!tab) {
       const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -725,11 +780,6 @@ function handleUpdateSettings(request, sendResponse) {
     // 更新延迟设置
     if (request.settings.delay !== undefined) {
       screenshotSettings.delay = request.settings.delay;
-    }
-    
-    // 更新热键设置
-    if (request.settings.hotkey !== undefined) {
-      screenshotSettings.hotkey = request.settings.hotkey;
     }
     
     // 更新双击设置
