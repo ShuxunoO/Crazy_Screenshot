@@ -116,12 +116,10 @@ Crazy Screenshot 是一个强大的 Google Chrome 浏览器扩展程序，为用
    - 点击扩展图标打开控制面板
    - 点击"Start"按钮开始录制
    - 此时每次点击鼠标或使用快捷键(Ctrl+Shift+Q)都会自动截取当前页面
-   <img src="./access/start_v2.png" alt="开始录制" style="zoom:50%;" />
-
+   
 3. **⏹️ 停止录制**：
    - 再次点击"Stop"按钮停止录制
    - 重新录制之后会重新记数
-   <img src="./access/stop_v2.png" alt="停止录制" style="zoom:50%;" />
 
 ### ⚙️ 功能设置
 

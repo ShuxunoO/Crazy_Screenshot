@@ -3,7 +3,7 @@
     <img src="./access/icon128.png" alt="Crazy Screenshot logo" width="32" height="32" style="vertical-align: middle; margin-right: 10px;">
     Crazy Screenshot 📸✨
   </h1>
-  
+
   <p>
     <a href="#features"><img src="https://img.shields.io/badge/version-1.0.0-blue" alt="Version"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
@@ -119,12 +119,10 @@ Simply enable the extension's recording feature and use your browser normally to
    - Click the extension icon to open the control panel
    - Click the "Start" button to begin recording
    - Each mouse click or keyboard shortcut (Ctrl+Shift+Q) will automatically capture the current page
-   ![Start Recording](./access/start_v2.png)
-
+   
 3. **⏹️ Stop Recording**:
    - Click the "Stop" button again to stop recording
    - The counter will reset when you start recording again
-   ![Stop Recording](./access/stop_v2.png)
 
 ### ⚙️ Feature Settings
 
