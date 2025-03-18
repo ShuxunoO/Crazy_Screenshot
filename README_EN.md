@@ -1,6 +1,6 @@
 <div align="center">
   <h1>
-    <img src="./access/icon128.png" alt="Crazy Screenshot logo" width="32" height="32" style="vertical-align: middle; margin-right: 10px;">
+    <img src="./assets/icon128.png" alt="Crazy Screenshot logo" width="32" height="32" style="vertical-align: middle; margin-right: 10px;">
     Crazy Screenshot 📸✨
   </h1>
 
@@ -50,7 +50,7 @@ Simply enable the extension's recording feature and use your browser normally to
 ## 🎬 Demo
 
 <div align="center">
-  <video src="./access/crazy_screenshot_demo.mp4" data-canonical-src="./access/crazy_screenshot_demo.mp4" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-height:640px; min-height: 200px"></video>
+  <video src="./assets/crazy_screenshot_demo.mp4" data-canonical-src="./assets/crazy_screenshot_demo.mp4" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-height:640px; min-height: 200px"></video>
 </div>
 
 ## 📊 Development Status
@@ -99,7 +99,7 @@ Simply enable the extension's recording feature and use your browser normally to
 2. Extract the downloaded ZIP file to a local folder
 3. Open Chrome browser and enter `chrome://extensions/` in the address bar
 4. Enable "Developer mode" in the upper right corner
-   ![Developer Mode](./access/developer_mode.png)
+   ![Developer Mode](./assets/developer_mode.png)
 5. Click the "Load unpacked" button
 6. Select the extracted project folder
 7. The extension will be added to your Chrome browser
@@ -112,7 +112,7 @@ Simply enable the extension's recording feature and use your browser normally to
    1. Click the `Settings` icon in Chrome toolbar
    2. Select `Downloads`
    3. Click `Change` and select your preferred save path
-   ![Change Save Path](./access/change_savepath.png)
+   ![Change Save Path](./assets/change_savepath.png)
    - Confirm the setting
 
 2. **▶️ Start Recording**:

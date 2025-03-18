@@ -1,6 +1,6 @@
 <div align="center">
   <h1>
-    <img src="./access/icon128.png" alt="Crazy Screenshot logo" width="32" height="32" style="vertical-align: middle; margin-right: 10px;">
+    <img src="./assets/icon128.png" alt="Crazy Screenshot logo" width="32" height="32" style="vertical-align: middle; margin-right: 10px;">
     Crazy Screenshot 📸✨
   </h1>
 
@@ -50,7 +50,7 @@ Crazy Screenshot 是一个强大的 Google Chrome 浏览器扩展程序，为用
 ## 🎬 功能演示
 
 <div align="center">
-  <video src="./access/crazy_screenshot_demo.mp4" data-canonical-src="./access/crazy_screenshot_demo.mp4" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-height:640px; min-height: 200px"></video>
+  <video src="./assets/crazy_screenshot_demo.mp4" data-canonical-src="./assets/crazy_screenshot_demo.mp4" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-height:640px; min-height: 200px"></video>
 </div>
 
 ## 📊 开发状态
@@ -96,7 +96,7 @@ Crazy Screenshot 是一个强大的 Google Chrome 浏览器扩展程序，为用
 2. 解压下载的ZIP文件到本地文件夹
 3. 打开Chrome浏览器，在地址栏输入 `chrome://extensions/`
 4. 在右上角启用"开发者模式"
-   <img src="./access/developer_mode.png" alt="开发者模式" style="zoom:80%;" />
+   <img src="./assets/developer_mode.png" alt="开发者模式" style="zoom:80%;" />
 5. 点击"加载已解压的扩展程序"按钮
 6. 选择解压后的项目文件夹
 7. 扩展程序将被添加到Chrome浏览器中
@@ -109,7 +109,7 @@ Crazy Screenshot 是一个强大的 Google Chrome 浏览器扩展程序，为用
    1. 点击Chrome工具栏中的`设置`图标
    2. 选择`下载内容`
    3. 点击`更改`之后选择保存的路径
-   <img src="./access/change_savepath.png" alt="修改保存路径" style="zoom:67%;" />
+   <img src="./assets/change_savepath.png" alt="修改保存路径" style="zoom:67%;" />
    - 确认设置
 
 2. **▶️ 开始录制**：
