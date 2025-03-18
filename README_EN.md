@@ -5,7 +5,7 @@
   </h1>
 
   <p>
-    <a href="#features"><img src="https://img.shields.io/badge/version-1.0.0-blue" alt="Version"></a>
+    <a href="#features"><img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License"></a>
     <a href="#installation"><img src="https://img.shields.io/badge/platform-Chrome-yellow" alt="Platform"></a>
   </p>
